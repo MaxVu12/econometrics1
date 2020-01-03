@@ -1,0 +1,71 @@
+---
+title: "ECON 323 Assignment 1"
+output: html_notebook
+---
+
+Loading the data
+```{r load}
+rm(list=ls())
+
+db <- read.csv("census2016.csv", header = TRUE, stringsAsFactors = FALSE)
+
+head(db)
+```
+The data contains 930421 observations from 5 variables AGEGRP (Age group), CfSize (Census Family Size), ROOMS (No. of rooms in the dwelling), Sex (Gender) and CfInc (Total Income).
+
+Transforming the data 
+```{r transform data}
+library(plyr)
+
+map <- c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,88)
+
+val <- c(2,5.5,8,10.5,13,16,18.5,22,27,32,37,42,47,52,57,62,67,72,77,82,88,NA)
+
+db$AGECON <- mapvalues(db$AGEGRP, from = map, to = val)
+
+db$ROOMS[db$ROOMS == 88] <- NA
+db$CfSize[db$CfSize == 8] <- NA
+db$CFInc[db$CFInc == 88] <- NA
+db$Sex[db$Sex == 2] <- 0
+
+db <- subset( db, select = -X )
+
+db2 <-na.omit(db)
+```
+The data is transformed such as AGECON is created to represent age as a continuous variable. Any category indicating unknown is converted to NA and removed from the dataset. The dataset used for upcoming part now contains 907308 observations. 
+
+Perform linear regression of rooms on other variables.
+```{r reg}
+olsreg <- lm(ROOMS ~ Sex + AGECON + CfSize + CFInc, data = db2)
+summary(olsreg)
+```
+```{r}
+olsreg1 <- lm(ROOMS ~ CfSize + CFInc, data = db2)
+summary(olsreg)
+```
+
+2-sided T-test for coeff Sex = -.5; 
+B0 = -.5 (null hypo)
+B1 =/= .5 (alt hypo )
+```{r}
+
+beta_reg <- coef(olsreg)
+
+beta_age <- beta_reg [3]
+
+se_age <- sqrt(vcov(olsreg)[3,3])
+
+t_age <- (beta_age + 0.5)/se_age
+t_age
+
+df_olsreg <- olsreg$df
+df_olsreg
+
+qt(0.975,df_olsreg)
+```
+
+Heteroskedasticity determination using BP test 
+```{r}
+library(lmtest)
+bptest(olsreg)
+```
